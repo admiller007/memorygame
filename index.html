@@ -8,19 +8,45 @@
 </head>
 <body>
   <h1>Photo Memory Game</h1>
-  <input type="file" id="imageUpload" multiple accept="image/*" />
-  <button id="startGame">Start Game</button>
 
+  <input type="file" id="imageUpload" multiple accept="image/*" />
+
+  <div>
+    <label><input type="checkbox" id="aiModeToggle"> Use AI Mode</label>
+  </div>
+
+  <div id="aiPromptArea" style="display: none; margin-top: 10px;">
+    <p>Enter 1–8 prompts (one per line):</p>
+    <textarea id="aiPrompts" rows="5" cols="40" placeholder="e.g.
+Cartoon dinosaur
+Astronaut dog
+Fantasy castle"></textarea>
+  </div>
+
+  <button id="startGame" style="margin-top: 10px;">Start Game</button>
+
+  <!-- 🔄 Loader with progress bar -->
+  <div id="loader" style="display:none; margin-top: 20px;">
+    <p>⏳ Generating AI images...</p>
+    <div style="width: 60%; margin: 0 auto; background: #eee; border-radius: 5px; overflow: hidden;">
+      <div id="progressBar" style="height: 20px; background: #4caf50; width: 0%; transition: width 0.5s;"></div>
+    </div>
+    <p id="loaderProgress">0%</p>
+  </div>
+
+  <!-- 📊 Game Stats -->
   <div id="stats">
     <p>⏱ Time: <span id="timer">0</span> seconds</p>
     <p>🔁 Flips: <span id="flipCount">0</span></p>
   </div>
 
+  <!-- 🎉 Win Message -->
   <div id="winMessage" style="display:none;">
     <h2>🎉 You did it! 🎉</h2>
     <p id="results"></p>
   </div>
 
+  <!-- 🎮 Game Board -->
   <div id="gameBoard"></div>
 
   <script src="script.js"></script>
