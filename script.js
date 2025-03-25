@@ -1,4 +1,4 @@
-// 🔥 Firebase config (yours)
+// 🔥 Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyCWNTqnmEG9DyVTNRkQ1clzbwXggJsey",
   authDomain: "memory-game-76ce8.firebaseapp.com",
@@ -6,33 +6,14 @@ const firebaseConfig = {
   projectId: "memory-game-76ce8",
   storageBucket: "memory-game-76ce8.appspot.com",
   messagingSenderId: "1083641868124",
-  appId: "1:1083641868124:web:02c45176361f3f2a7cdb99",
+  appId: "1:1083641868124:web:02c45176361f3f2a7cdb99"
 };
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// 🔧 DOM elements
-const joinBtn = document.getElementById("joinRoom");
-const playerInput = document.getElementById("playerName");
-const roomInput = document.getElementById("roomCode");
-const joinStatus = document.getElementById("joinStatus");
-const playerLabel = document.getElementById("playerLabel");
-const turnLabel = document.getElementById("turnLabel");
-const gameBoard = document.getElementById("gameBoard");
-
-const uploadInput = document.getElementById('imageUpload');
-const startBtn = document.getElementById('startGame');
-const timerDisplay = document.getElementById('timer');
-const flipDisplay = document.getElementById('flipCount');
-const winMessage = document.getElementById('winMessage');
-const results = document.getElementById('results');
-const aiToggle = document.getElementById("aiModeToggle");
-const aiPromptArea = document.getElementById("aiPromptArea");
-const loader = document.getElementById("loader");
-const loaderProgress = document.getElementById("loaderProgress");
-const progressBar = document.getElementById("progressBar");
-
+const IMGUR_CLIENT_ID = "c82400a2d8c10b3";
+let images = [];
 let localPlayer = null;
 let roomId = null;
 let isPlayerTurn = false;
@@ -40,14 +21,89 @@ let flipCount = 0;
 let timerInterval;
 let startTime;
 
-// 🎵 Optional local win sound
-const winSound = new Audio("assets/win.mp3");
-document.addEventListener('click', () => {
-  winSound.play().then(() => {
-    winSound.pause();
-    winSound.currentTime = 0;
-  }).catch(() => {});
-}, { once: true });
+// DOM references
+const joinBtn = document.getElementById("joinRoom");
+const playerInput = document.getElementById("playerName");
+const roomInput = document.getElementById("roomCode");
+const joinStatus = document.getElementById("joinStatus");
+const playerLabel = document.getElementById("playerLabel");
+const turnLabel = document.getElementById("turnLabel");
+const gameBoard = document.getElementById("gameBoard");
+const uploadInput = document.getElementById("imageUpload");
+const startBtn = document.getElementById("startGame");
+const timerDisplay = document.getElementById("timer");
+const flipDisplay = document.getElementById("flipCount");
+const winMessage = document.getElementById("winMessage");
+const results = document.getElementById("results");
+const aiToggle = document.getElementById("aiModeToggle");
+const aiPromptArea = document.getElementById("aiPromptArea");
+const loader = document.getElementById("loader");
+const loaderProgress = document.getElementById("loaderProgress");
+const progressBar = document.getElementById("progressBar");
+
+function shuffle(arr) {
+  return arr.sort(() => 0.5 - Math.random());
+}
+
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function uploadToImgur(base64Data) {
+  const formData = new FormData();
+  formData.append("image", base64Data.split(',')[1]);
+
+  const res = await fetch("https://api.imgur.com/3/image", {
+    method: "POST",
+    headers: {
+      Authorization: `Client-ID ${IMGUR_CLIENT_ID}`
+    },
+    body: formData
+  });
+
+  const data = await res.json();
+  if (!data.success) throw new Error("Imgur upload failed");
+  return data.data.link;
+}
+
+async function generateImageFromPrompt(prompt) {
+  const HF_TOKEN = "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";
+  const res = await fetch("https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${HF_TOKEN}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ inputs: prompt })
+  });
+
+  if (!res.ok) throw new Error("HuggingFace error");
+  const blob = await res.blob();
+  const base64 = await blobToBase64(blob);
+  return await uploadToImgur(base64);
+}
+
+function startTimer() {
+  clearInterval(timerInterval);
+  startTime = Date.now();
+  timerInterval = setInterval(() => {
+    timerDisplay.textContent = Math.floor((Date.now() - startTime) / 1000);
+  }, 1000);
+}
+
+function showWinMessage(winner) {
+  winMessage.style.display = "block";
+  results.textContent = `${winner} wins! 🎉`;
+}
+
+function getOpponent() {
+  return localPlayer === "Aaron" ? "Matthew" : "Aaron";
+}
 
 aiToggle.addEventListener("change", () => {
   aiPromptArea.style.display = aiToggle.checked ? "block" : "none";
@@ -56,18 +112,15 @@ aiToggle.addEventListener("change", () => {
 joinBtn.addEventListener("click", () => {
   localPlayer = playerInput.value.trim();
   roomId = roomInput.value.trim().toLowerCase();
-
   if (!localPlayer || !roomId) {
     joinStatus.textContent = "❌ Enter a name and room code.";
     return;
   }
 
   const roomRef = db.ref(`rooms/${roomId}`);
-
   roomRef.once("value").then(snapshot => {
     const roomData = snapshot.val() || {};
     const players = roomData.players || {};
-
     if (Object.keys(players).length >= 2 && !players[localPlayer]) {
       joinStatus.textContent = "❌ Room full.";
       return;
@@ -78,16 +131,13 @@ joinBtn.addEventListener("click", () => {
     turnLabel.textContent = "Waiting...";
     joinStatus.textContent = "✅ Joined! Waiting for second player...";
 
-    // Listen for game updates
     roomRef.on("value", snapshot => {
       const data = snapshot.val();
-      if (!data || !data.board) return;
+      if (!data) return;
+      isPlayerTurn = data.currentTurn === localPlayer;
+      turnLabel.textContent = data.currentTurn || "–";
 
-      const currentTurn = data.currentTurn;
-      isPlayerTurn = currentTurn === localPlayer;
-      turnLabel.textContent = currentTurn;
-
-      if (data.board) renderBoard(data.board);
+      if (data.board && Array.isArray(data.board)) renderBoard(data.board);
       if (data.winner && !winMessage.style.display.includes("block")) {
         showWinMessage(data.winner);
       }
@@ -95,17 +145,17 @@ joinBtn.addEventListener("click", () => {
   });
 });
 
-uploadInput.addEventListener('change', e => {
+uploadInput.addEventListener("change", e => {
   images = Array.from(e.target.files).slice(0, 8);
 });
 
 startBtn.addEventListener("click", async () => {
-  if (!roomId || !localPlayer) {
-    alert("Join a room first.");
-    return;
-  }
+  if (!roomId || !localPlayer) return alert("Join a room first.");
+  const roomSnapshot = await db.ref(`rooms/${roomId}/players`).once("value");
+  const playerOrder = Object.keys(roomSnapshot.val() || {});
+  if (playerOrder[0] !== localPlayer) return alert("Only first player can start.");
 
-  winMessage.style.display = 'none';
+  winMessage.style.display = "none";
   flipDisplay.textContent = "0";
   timerDisplay.textContent = "0";
   flipCount = 0;
@@ -116,8 +166,7 @@ startBtn.addEventListener("click", async () => {
   if (aiToggle.checked) {
     const prompts = document.getElementById("aiPrompts").value
       .split("\n").map(s => s.trim()).filter(Boolean).slice(0, 8);
-
-    if (prompts.length === 0) return alert("Enter at least one prompt.");
+    if (prompts.length === 0) return alert("Enter prompts.");
 
     loader.style.display = "block";
     progressBar.style.width = "0%";
@@ -127,36 +176,38 @@ startBtn.addEventListener("click", async () => {
       try {
         const imgUrl = await generateImageFromPrompt(prompts[i]);
         imgData.push(imgUrl);
-      } catch {
-        imgData.push("https://via.placeholder.com/512?text=Error");
+      } catch (err) {
+        console.error("❌ AI image failed:", err);
       }
       const pct = Math.round(((i + 1) / prompts.length) * 100);
-      progressBar.style.width = pct + "%";
-      loaderProgress.textContent = pct + "%";
+      progressBar.style.width = `${pct}%`;
+      loaderProgress.textContent = `${pct}%`;
     }
-
     loader.style.display = "none";
   } else {
-    const readerPromises = images.map(file => {
-      return new Promise(resolve => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.readAsDataURL(file);
-      });
-    });
-    imgData = await Promise.all(readerPromises);
+    const imgPromises = images.map(file => new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const url = await uploadToImgur(reader.result);
+          console.log("✅ Uploaded to Imgur:", url);
+          resolve(url);
+        } catch (err) {
+          console.error("❌ Upload failed:", err);
+          resolve(null);
+        }
+      };
+      reader.readAsDataURL(file);
+    }));
+    imgData = (await Promise.all(imgPromises)).filter(Boolean);
   }
 
-  // Duplicate and shuffle
+  if (imgData.length < 2) return alert("Need at least 2 images.");
+
   const allCards = shuffle([...imgData, ...imgData]);
 
-  // Store game in Firebase
   db.ref(`rooms/${roomId}`).update({
-    board: allCards.map((src, idx) => ({
-      src,
-      matched: false,
-      id: idx
-    })),
+    board: allCards.map((src, idx) => ({ src, matched: false, id: idx })),
     currentTurn: localPlayer,
     flipped: [],
     winner: null
@@ -173,7 +224,7 @@ function renderBoard(cards) {
     div.className = "card";
     div.dataset.id = card.id;
 
-    if (card.matched || card.flipped) {
+    if (card.matched) {
       div.classList.add("flipped");
       div.style.backgroundImage = `url(${card.src})`;
     }
@@ -183,8 +234,12 @@ function renderBoard(cards) {
 
       db.ref(`rooms/${roomId}/flipped`).once("value").then(snapshot => {
         const flipped = snapshot.val() || [];
-
         if (flipped.find(c => c.id === card.id)) return;
+
+        flipCount++;
+        flipDisplay.textContent = flipCount;
+        div.classList.add("flipped");
+        div.style.backgroundImage = `url(${card.src})`;
 
         flipped.push(card);
 
@@ -200,11 +255,17 @@ function renderBoard(cards) {
               cards[a.id].matched = true;
               cards[b.id].matched = true;
               updates[`rooms/${roomId}/board`] = cards;
+            } else {
+              // flip back UI
+              const aDiv = document.querySelector(`.card[data-id="${a.id}"]`);
+              const bDiv = document.querySelector(`.card[data-id="${b.id}"]`);
+              aDiv.classList.remove("flipped");
+              bDiv.classList.remove("flipped");
+              aDiv.style.backgroundImage = "";
+              bDiv.style.backgroundImage = "";
             }
 
-            updates[`rooms/${roomId}/currentTurn`] =
-              isMatch ? localPlayer : getOpponent();
-
+            updates[`rooms/${roomId}/currentTurn`] = isMatch ? localPlayer : getOpponent();
             if (cards.every(c => c.matched)) {
               updates[`rooms/${roomId}/winner`] = localPlayer;
             }
@@ -219,42 +280,4 @@ function renderBoard(cards) {
 
     gameBoard.appendChild(div);
   });
-}
-
-function showWinMessage(winner) {
-  winMessage.style.display = "block";
-  results.textContent = `${winner} wins! 🎉`;
-  winSound.play();
-}
-
-function getOpponent() {
-  return localPlayer === "Player1" ? "Player2" : "Player1";
-}
-
-function shuffle(arr) {
-  return arr.sort(() => 0.5 - Math.random());
-}
-
-function startTimer() {
-  clearInterval(timerInterval);
-  startTime = Date.now();
-  timerInterval = setInterval(() => {
-    timerDisplay.textContent = Math.floor((Date.now() - startTime) / 1000);
-  }, 1000);
-}
-
-async function generateImageFromPrompt(prompt) {
-  const HF_TOKEN = "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";
-  const res = await fetch("https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${HF_TOKEN}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ inputs: prompt })
-  });
-
-  if (!res.ok) throw new Error("HuggingFace error");
-  const blob = await res.blob();
-  return URL.createObjectURL(blob);
 }
