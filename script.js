@@ -19,14 +19,17 @@ let matchedPairs = 0;
 let timerInterval;
 let startTime;
 
-// 🎉 Win Sound (Base64-encoded WAV)
-const winSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-arcade-retro-changing-tab-206.wav');
-// 🔓 Unlock audio permission on first user interaction
+// ✅ Local win sound
+const winSound = new Audio("assets/win.mp3");
+
+// 🔓 Unlock audio on first user interaction
 document.addEventListener('click', () => {
   winSound.play().then(() => {
     winSound.pause();
     winSound.currentTime = 0;
-  }).catch(() => {});
+  }).catch(() => {
+    console.warn("Audio autoplay blocked or skipped.");
+  });
 }, { once: true });
 
 aiToggle.addEventListener("change", () => {
