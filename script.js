@@ -6,36 +6,28 @@ const flipDisplay = document.getElementById('flipCount');
 const winMessage = document.getElementById('winMessage');
 const results = document.getElementById('results');
 
+const aiToggle = document.getElementById("aiModeToggle");
+const aiPromptArea = document.getElementById("aiPromptArea");
+
+const loader = document.getElementById("loader");
+const loaderProgress = document.getElementById("loaderProgress");
+const progressBar = document.getElementById("progressBar");
+
 let images = [];
 let flipCount = 0;
 let matchedPairs = 0;
 let timerInterval;
 let startTime;
 
+aiToggle.addEventListener("change", () => {
+  aiPromptArea.style.display = aiToggle.checked ? "block" : "none";
+});
+
 uploadInput.addEventListener('change', (e) => {
-  images = Array.from(e.target.files).slice(0, 8); // limit to 8 pairs = 16 cards
+  images = Array.from(e.target.files).slice(0, 8);
 });
 
-startBtn.addEventListener('click', () => {
-  if (images.length === 0) {
-    alert('Please upload at least one image.');
-    return;
-  }
-
-  const readerPromises = images.map(file => {
-    return new Promise(resolve => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.readAsDataURL(file);
-    });
-  });
-
-  Promise.all(readerPromises).then(imgData => {
-    startMemoryGame(imgData);
-  });
-});
-
-function startMemoryGame(imgData) {
+startBtn.addEventListener('click', async () => {
   gameBoard.innerHTML = '';
   winMessage.style.display = 'none';
   timerDisplay.textContent = '0';
@@ -43,7 +35,64 @@ function startMemoryGame(imgData) {
   flipCount = 0;
   matchedPairs = 0;
 
-  let cards = [...imgData, ...imgData]; // duplicate for pairs
+  if (aiToggle.checked) {
+    const promptLines = document.getElementById('aiPrompts').value
+      .split('\n')
+      .map(p => p.trim())
+      .filter(p => p.length > 0)
+      .slice(0, 8);
+
+    if (promptLines.length === 0) {
+      alert("Please enter at least one AI prompt.");
+      return;
+    }
+
+    const imageUrls = [];
+    loader.style.display = "block";
+    loaderProgress.textContent = "0%";
+    progressBar.style.width = "0%";
+
+    for (let i = 0; i < promptLines.length; i++) {
+      const prompt = promptLines[i];
+      try {
+        const imgUrl = await generateImageFromPrompt(prompt);
+        imageUrls.push(imgUrl);
+      } catch (err) {
+        console.error(`Error generating image for prompt "${prompt}":`, err);
+        alert("Failed to generate image for prompt: " + prompt + "\nUsing placeholder instead.");
+        imageUrls.push("https://via.placeholder.com/512?text=Image+Unavailable");
+      }
+
+      const percent = Math.round(((i + 1) / promptLines.length) * 100);
+      loaderProgress.textContent = `${percent}%`;
+      progressBar.style.width = `${percent}%`;
+    }
+
+    loader.style.display = "none";
+    startMemoryGame(imageUrls);
+  } else {
+    if (images.length === 0) {
+      alert('Please upload at least one image.');
+      return;
+    }
+
+    const readerPromises = images.map(file => {
+      return new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+      });
+    });
+
+    const imgData = await Promise.all(readerPromises);
+    startMemoryGame(imgData);
+  }
+});
+
+function startMemoryGame(imgData) {
+  gameBoard.innerHTML = '';
+
+  let cards = [...imgData, ...imgData];
   cards = shuffle(cards);
 
   const gridSize = Math.ceil(Math.sqrt(cards.length));
@@ -123,4 +172,24 @@ function showWinMessage(time, flips) {
 
 function shuffle(array) {
   return array.sort(() => 0.5 - Math.random());
+}
+
+async function generateImageFromPrompt(prompt) {
+  const HF_TOKEN = "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";
+  const response = await fetch("https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${HF_TOKEN}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ inputs: prompt })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error("Hugging Face error: " + errorText);
+  }
+
+  const blob = await response.blob();
+  return URL.createObjectURL(blob); // Use object URL for image src
 }
