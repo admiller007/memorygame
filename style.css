@@ -13,17 +13,14 @@ h1 {
   grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
   gap: 10px;
   justify-content: center;
-  margin: 20px;
+  margin: 20px auto;
   max-width: 500px;
-  margin-left: auto;
-  margin-right: auto;
 }
 
-/* 💳 Base card style */
 .card {
   width: 100px;
   height: 140px;
-  background-color: #3498db; /* back of card */
+  background-color: #3498db;
   border-radius: 10px;
   cursor: pointer;
   background-size: cover;
@@ -32,13 +29,11 @@ h1 {
   box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
-/* 🌀 Flip effect (optional enhancement) */
 .card.flipped {
   transform: rotateY(180deg);
   background-color: #fff;
 }
 
-/* 🎯 Turn indicator */
 #turnLabel {
   font-weight: bold;
   font-size: 1.2em;

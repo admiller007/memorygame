@@ -17,11 +17,15 @@
     <p id="joinStatus" style="margin-top: 5px;"></p>
   </div>
 
-  <!-- 🖼️ Image Upload + AI Toggle -->
+  <!-- 🧩 Mode Toggles -->
   <input type="file" id="imageUpload" multiple accept="image/*" />
 
   <div>
     <label><input type="checkbox" id="aiModeToggle"> Use AI Mode</label>
+  </div>
+
+  <div>
+    <label><input type="checkbox" id="singlePlayerToggle"> Single Player Mode</label>
   </div>
 
   <div id="aiPromptArea" style="display: none; margin-top: 10px;">
@@ -60,7 +64,7 @@ Fantasy castle"></textarea>
   <!-- 🧠 Game Board -->
   <div id="gameBoard"></div>
 
-  <!-- ✅ Firebase SDKs (Compat Versions for Classic Script Use) -->
+  <!-- ✅ Firebase SDKs (Compat Versions) -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
