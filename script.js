@@ -18,6 +18,8 @@ let flipCount = 0;
 let matchedPairs = 0;
 let timerInterval;
 let startTime;
+// Create audio element for win sound
+const winSound = new Audio('data:audio/wav;base64,//uQRAAAAWMSLwUIYAAsYkXgoQwAEaYLWfkWgAI0wWs/ItAAAGDgYtAgAyN+QWaAAihwMWm4G8QQRDiMcCBcH3Bt8Qjw4BRDV0QMXC47q6s5qgCfZiCJ34BBOBRgQAkBRQiGzbBSIAIQEYLQ6/1eKB5bP/RZFL1zCQRjSCSgvB4zeXWFBYGFC3SfMLGWNB/DbxNtJ3SgXY7PHKJBoR9VuaXCaibxw6NQtA2kSQQvjyhUar9ZRwcHuWQ6s3UXnlQlwt6zqv6Q8T2U0yWJZ6vxMwlp2A7ms3W1Q8F6xcfPvkQ3r3xZVo6c4iV5/XrTzKMqFcYVOqFaWZSNwXhrK0+qoqDhZgeyGFgy5z7DsFE0aSXAXhDkwBg0g3JOz3oLEwNHAunTranOszL2/MQjNBxO+egJgLHAVfE0orCm0/ejWIh3XVBn5rCgwDslQFuIBnEb9IayRBjQ5uC8c8bJNPNYZoSAg8jQKEIKo0Qg2V6gWW5ScXtqOrXt3xfW/UNs1aWOP3SV9HIfQhPAkAAA==');
 
 aiToggle.addEventListener("change", () => {
   aiPromptArea.style.display = aiToggle.checked ? "block" : "none";
