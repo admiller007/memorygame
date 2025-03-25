@@ -9,6 +9,14 @@
 <body>
   <h1>Photo Memory Game</h1>
 
+  <!-- 🧑‍🤝‍🧑 Multiplayer Setup -->
+  <div id="multiplayerSetup" style="margin-bottom: 20px;">
+    <input type="text" id="playerName" placeholder="Your name" />
+    <input type="text" id="roomCode" placeholder="Room code" />
+    <button id="joinRoom">Join Room</button>
+    <p id="joinStatus" style="margin-top: 5px;"></p>
+  </div>
+
   <input type="file" id="imageUpload" multiple accept="image/*" />
 
   <div>
@@ -36,6 +44,8 @@ Fantasy castle"></textarea>
 
   <!-- 📊 Game Stats -->
   <div id="stats">
+    <p>🧑‍🚀 You are: <span id="playerLabel">–</span></p>
+    <p>🎯 Turn: <span id="turnLabel">–</span></p>
     <p>⏱ Time: <span id="timer">0</span> seconds</p>
     <p>🔁 Flips: <span id="flipCount">0</span></p>
   </div>
@@ -48,6 +58,10 @@ Fantasy castle"></textarea>
 
   <!-- 🎮 Game Board -->
   <div id="gameBoard"></div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
 
   <script src="script.js"></script>
 </body>
