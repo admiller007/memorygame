@@ -18,8 +18,17 @@ let flipCount = 0;
 let matchedPairs = 0;
 let timerInterval;
 let startTime;
-// Create audio element for win sound
+
+// 🎉 Win Sound (Base64-encoded WAV)
 const winSound = new Audio('data:audio/wav;base64,//uQRAAAAWMSLwUIYAAsYkXgoQwAEaYLWfkWgAI0wWs/ItAAAGDgYtAgAyN+QWaAAihwMWm4G8QQRDiMcCBcH3Bt8Qjw4BRDV0QMXC47q6s5qgCfZiCJ34BBOBRgQAkBRQiGzbBSIAIQEYLQ6/1eKB5bP/RZFL1zCQRjSCSgvB4zeXWFBYGFC3SfMLGWNB/DbxNtJ3SgXY7PHKJBoR9VuaXCaibxw6NQtA2kSQQvjyhUar9ZRwcHuWQ6s3UXnlQlwt6zqv6Q8T2U0yWJZ6vxMwlp2A7ms3W1Q8F6xcfPvkQ3r3xZVo6c4iV5/XrTzKMqFcYVOqFaWZSNwXhrK0+qoqDhZgeyGFgy5z7DsFE0aSXAXhDkwBg0g3JOz3oLEwNHAunTranOszL2/MQjNBxO+egJgLHAVfE0orCm0/ejWIh3XVBn5rCgwDslQFuIBnEb9IayRBjQ5uC8c8bJNPNYZoSAg8jQKEIKo0Qg2V6gWW5ScXtqOrXt3xfW/UNs1aWOP3SV9HIfQhPAkAAA==');
+
+// 🔓 Unlock audio permission on first user interaction
+document.addEventListener('click', () => {
+  winSound.play().then(() => {
+    winSound.pause();
+    winSound.currentTime = 0;
+  }).catch(() => {});
+}, { once: true });
 
 aiToggle.addEventListener("change", () => {
   aiPromptArea.style.display = aiToggle.checked ? "block" : "none";
@@ -61,7 +70,6 @@ startBtn.addEventListener('click', async () => {
         imageUrls.push(imgUrl);
       } catch (err) {
         console.error(`Error generating image for prompt "${prompt}":`, err);
-        alert("Failed to generate image for prompt: " + prompt + "\nUsing placeholder instead.");
         imageUrls.push("https://via.placeholder.com/512?text=Image+Unavailable");
       }
 
@@ -152,6 +160,7 @@ function startMemoryGame(imgData) {
             clearInterval(timerInterval);
             const totalTime = Math.floor((Date.now() - startTime) / 1000);
             showWinMessage(totalTime, flipCount);
+            winSound.play();
           }
         } else {
           lockBoard = true;
@@ -174,4 +183,24 @@ function showWinMessage(time, flips) {
 
 function shuffle(array) {
   return array.sort(() => 0.5 - Math.random());
+}
+
+async function generateImageFromPrompt(prompt) {
+  const HF_TOKEN = "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";
+  const response = await fetch("https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${HF_TOKEN}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ inputs: prompt })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error("Hugging Face error: " + errorText);
+  }
+
+  const blob = await response.blob();
+  return URL.createObjectURL(blob);
 }
