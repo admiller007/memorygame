@@ -1,8 +1,16 @@
 const uploadInput = document.getElementById('imageUpload');
 const startBtn = document.getElementById('startGame');
 const gameBoard = document.getElementById('gameBoard');
+const timerDisplay = document.getElementById('timer');
+const flipDisplay = document.getElementById('flipCount');
+const winMessage = document.getElementById('winMessage');
+const results = document.getElementById('results');
 
 let images = [];
+let flipCount = 0;
+let matchedPairs = 0;
+let timerInterval;
+let startTime;
 
 uploadInput.addEventListener('change', (e) => {
   images = Array.from(e.target.files).slice(0, 8); // limit to 8 pairs = 16 cards
@@ -29,6 +37,12 @@ startBtn.addEventListener('click', () => {
 
 function startMemoryGame(imgData) {
   gameBoard.innerHTML = '';
+  winMessage.style.display = 'none';
+  timerDisplay.textContent = '0';
+  flipDisplay.textContent = '0';
+  flipCount = 0;
+  matchedPairs = 0;
+
   let cards = [...imgData, ...imgData]; // duplicate for pairs
   cards = shuffle(cards);
 
@@ -37,6 +51,13 @@ function startMemoryGame(imgData) {
 
   let firstCard = null;
   let lockBoard = false;
+
+  startTime = Date.now();
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    const seconds = Math.floor((Date.now() - startTime) / 1000);
+    timerDisplay.textContent = seconds;
+  }, 1000);
 
   cards.forEach((src, index) => {
     const card = document.createElement('div');
@@ -47,7 +68,7 @@ function startMemoryGame(imgData) {
 
     const front = document.createElement('div');
     front.className = 'card-front';
-    front.style.backgroundColor = '#888';
+    front.style.background = '#888';
 
     const back = document.createElement('div');
     back.className = 'card-back';
@@ -62,6 +83,8 @@ function startMemoryGame(imgData) {
       if (lockBoard || card.classList.contains('flipped')) return;
 
       card.classList.add('flipped');
+      flipCount++;
+      flipDisplay.textContent = flipCount;
 
       if (!firstCard) {
         firstCard = card;
@@ -71,7 +94,14 @@ function startMemoryGame(imgData) {
                         secondCard.querySelector('.card-back').style.backgroundImage;
 
         if (isMatch) {
+          matchedPairs++;
           firstCard = null;
+
+          if (matchedPairs === imgData.length) {
+            clearInterval(timerInterval);
+            const totalTime = Math.floor((Date.now() - startTime) / 1000);
+            showWinMessage(totalTime, flipCount);
+          }
         } else {
           lockBoard = true;
           setTimeout(() => {
@@ -84,6 +114,11 @@ function startMemoryGame(imgData) {
       }
     });
   });
+}
+
+function showWinMessage(time, flips) {
+  results.textContent = `You finished in ${time} seconds with ${flips} flips. 🧠🔥`;
+  winMessage.style.display = 'block';
 }
 
 function shuffle(array) {
