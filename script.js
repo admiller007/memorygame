@@ -173,23 +173,3 @@ function showWinMessage(time, flips) {
 function shuffle(array) {
   return array.sort(() => 0.5 - Math.random());
 }
-
-async function generateImageFromPrompt(prompt) {
-  const HF_TOKEN = "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";
-  const response = await fetch("https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${HF_TOKEN}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ inputs: prompt })
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error("Hugging Face error: " + errorText);
-  }
-
-  const blob = await response.blob();
-  return URL.createObjectURL(blob); // Use object URL for image src
-}
