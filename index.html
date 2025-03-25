@@ -17,6 +17,7 @@
     <p id="joinStatus" style="margin-top: 5px;"></p>
   </div>
 
+  <!-- 🖼️ Image Upload + AI Toggle -->
   <input type="file" id="imageUpload" multiple accept="image/*" />
 
   <div>
@@ -56,13 +57,14 @@ Fantasy castle"></textarea>
     <p id="results"></p>
   </div>
 
-  <!-- 🎮 Game Board -->
+  <!-- 🧠 Game Board -->
   <div id="gameBoard"></div>
 
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+  <!-- ✅ Firebase SDKs (Compat Versions for Classic Script Use) -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
+  <!-- 🔁 Main Game Script -->
   <script src="script.js"></script>
 </body>
 </html>
